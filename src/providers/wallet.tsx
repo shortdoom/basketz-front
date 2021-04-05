@@ -10,7 +10,10 @@ interface WalletState extends ProviderInformation {
   status: 'idle' | 'signOut' | 'signIn'
 }
 //type WalletAction = { type: 'SIGN_IN'; token: string } | { type: 'SIGN_OUT' }
-type WalletAction = { type: 'SIGN_IN' } | { type: 'SIGN_OUT' };
+type WalletAction = 
+  { type: 'SIGN_IN', provider: ethers.providers.JsonRpcProvider, signer: ethers.providers.JsonRpcSigner | null } |
+  { type: 'SIGN_OUT' };
+
 interface WalletContextActions {
   signIn: () => void
   signOut: () => void
@@ -51,10 +54,43 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     initState()
   }, []);
 
+  const getNetwork = async (newProvider: ethers.providers.JsonRpcProvider) => {
+    const timeOut = new Promise((_, reject) => {
+      setTimeout(reject, 2000, 'request timed out');
+    });
+    
+    const findNetwork = new Promise((resolve, _) => {
+      newProvider.on("network", (newNetwork: ethers.providers.Network, oldNetwork: ethers.providers.Network | null ) => {
+        console.log(`new network: ${newNetwork ? JSON.stringify(newNetwork) : ''}, old network: ${oldNetwork ? JSON.stringify(oldNetwork) : ''}`);
+        if (oldNetwork) {
+            window.location.reload();
+        }
+        resolve(newNetwork);
+      });
+    });
+
+    return Promise.race([timeOut, findNetwork])
+  }
+
   const WalletActions: WalletContextActions = useMemo(
     () => ({
       signIn: async () => {
-        dispatch({ type: 'SIGN_IN' /* , token */});
+        console.log('signing in');
+        const walletProvider : ProviderInformation = {
+          provider: null,
+          signer: null,
+        };
+        if ((window as any).ethereum) {
+          console.log('metamask was found');
+          walletProvider.provider = new ethers.providers.Web3Provider((window as any).ethereum, "any");
+          walletProvider.signer = walletProvider.provider.getSigner();
+        } else {
+          console.log('metamask was NOT found');
+          walletProvider.provider = new ethers.providers.JsonRpcProvider();
+          walletProvider.signer = walletProvider.provider.getSigner();
+        }
+        await getNetwork(walletProvider.provider);
+        dispatch({ type: 'SIGN_IN' , provider: walletProvider.provider, signer: walletProvider.signer });
         storage.setItem(constant.KEY_INFO, 'test');
       },
       signOut: async () => {
@@ -73,34 +109,11 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
 const WalletReducer = (prevState: WalletState, action: WalletAction): WalletState => {
   switch (action.type) {
     case 'SIGN_IN':
-      console.log('signing in');
-      const walletProvider : ProviderInformation = {
-        provider: null,
-        signer: null,
-      };
-      if ((window as any).ethereum) {
-        console.log('metamask was found');
-        walletProvider.provider = new ethers.providers.Web3Provider((window as any).ethereum, "any");
-        walletProvider.signer = walletProvider.provider.getSigner();
-      } else {
-        console.log('metamask was NOT found');
-        walletProvider.provider = new ethers.providers.Web3Provider((window as any).ethereum, "any");
-        walletProvider.signer = walletProvider.provider.getSigner();
-      }
-      walletProvider.provider.on("network", (newNetwork: string, oldNetwork: string) => {
-        console.log(`new network: ${newNetwork ? JSON.stringify(newNetwork) : ''}, old network: ${oldNetwork ? JSON.stringify(oldNetwork) : ''}`);
-        // When a Provider makes its initial connection, it emits a "network"
-        // event with a null oldNetwork along with the newNetwork. So, if the
-        // oldNetwork exists, it represents a changing network
-        if (oldNetwork) {
-            window.location.reload();
-        }
-      });
       return {
         ...prevState,
         status: 'signIn',
-        provider: walletProvider.provider,
-        signer: walletProvider.signer,
+        provider: action.provider,
+        signer: action.signer,
       }
     case 'SIGN_OUT':
       console.log('signing out');

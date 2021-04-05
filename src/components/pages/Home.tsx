@@ -57,7 +57,11 @@ export default function HomePage() {
         <Button color="inherit" component={RouterLink} to="/test">Home</Button>
         <Typography variant="h6" component="div" className={classes.title}>
         </Typography>
-        {provider ? <Button color="inherit" onClick={signOut}>Logout</Button> : <Button color="inherit" onClick={signIn}>Login</Button> }
+        {
+          provider ? 
+          <Button color="inherit" onClick={signOut}>{`Logout ${provider.network.name}`}</Button> :
+          <Button color="inherit" onClick={signIn}>Connect wallet</Button>
+        }
       </Toolbar>
     </AppBar>
     <Toolbar />
