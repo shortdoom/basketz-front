@@ -80,21 +80,21 @@ const WalletReducer = (prevState: WalletState, action: WalletAction): WalletStat
       };
       if ((window as any).ethereum) {
         console.log('metamask was found');
-        walletProvider.provider = new ethers.providers.Web3Provider((window as any).ethereum);
+        walletProvider.provider = new ethers.providers.Web3Provider((window as any).ethereum, "any");
         walletProvider.signer = walletProvider.provider.getSigner();
       } else {
         console.log('metamask was NOT found');
-        walletProvider.provider = new ethers.providers.Web3Provider((window as any).ethereum);
+        walletProvider.provider = new ethers.providers.Web3Provider((window as any).ethereum, "any");
         walletProvider.signer = walletProvider.provider.getSigner();
       }
       walletProvider.provider.on("network", (newNetwork: string, oldNetwork: string) => {
         console.log(`new network: ${newNetwork ? JSON.stringify(newNetwork) : ''}, old network: ${oldNetwork ? JSON.stringify(oldNetwork) : ''}`);
-          // When a Provider makes its initial connection, it emits a "network"
-          // event with a null oldNetwork along with the newNetwork. So, if the
-          // oldNetwork exists, it represents a changing network
-          if (oldNetwork) {
-              window.location.reload();
-          }
+        // When a Provider makes its initial connection, it emits a "network"
+        // event with a null oldNetwork along with the newNetwork. So, if the
+        // oldNetwork exists, it represents a changing network
+        if (oldNetwork) {
+            window.location.reload();
+        }
       });
       return {
         ...prevState,
