@@ -54,23 +54,17 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     initState()
   }, []);
 
-  const getNetwork = async (newProvider: ethers.providers.JsonRpcProvider) => {
-    const timeOut = new Promise((_, reject) => {
-      setTimeout(reject, 2000, 'request timed out');
+  const getNetwork = (newProvider: ethers.providers.JsonRpcProvider) => new Promise((resolve, reject) => {
+    const timeOut = setTimeout(reject, 2000, 'request timed out');
+    newProvider.on("network", (newNetwork: ethers.providers.Network, oldNetwork: ethers.providers.Network | null ) => {
+      console.log(`new network: ${newNetwork ? JSON.stringify(newNetwork) : ''}, old network: ${oldNetwork ? JSON.stringify(oldNetwork) : ''}`);
+      if (oldNetwork) {
+          window.location.reload();
+      }
+      clearTimeout(timeOut);
+      resolve(newNetwork);
     });
-    
-    const findNetwork = new Promise((resolve, _) => {
-      newProvider.on("network", (newNetwork: ethers.providers.Network, oldNetwork: ethers.providers.Network | null ) => {
-        console.log(`new network: ${newNetwork ? JSON.stringify(newNetwork) : ''}, old network: ${oldNetwork ? JSON.stringify(oldNetwork) : ''}`);
-        if (oldNetwork) {
-            window.location.reload();
-        }
-        resolve(newNetwork);
-      });
-    });
-
-    return Promise.race([timeOut, findNetwork])
-  }
+  });
 
   const WalletActions: WalletContextActions = useMemo(
     () => ({
