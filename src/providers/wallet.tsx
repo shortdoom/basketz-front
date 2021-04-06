@@ -3,7 +3,7 @@ import { ethers } from "ethers";
 import { constant, storage } from '../utils';
 
 interface ProviderInformation {
-  provider: ethers.providers.JsonRpcProvider | null
+  provider: ethers.providers.JsonRpcProvider | ethers.providers.Web3Provider | null
   signer: ethers.providers.JsonRpcSigner | null
 }
 interface WalletState extends ProviderInformation {
@@ -66,6 +66,10 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     });
   });
 
+  const loadContracts = async (provider: ethers.providers.JsonRpcProvider) => {
+
+  }
+
   const WalletActions: WalletContextActions = useMemo(
     () => ({
       signIn: async () => {
@@ -74,9 +78,10 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
           provider: null,
           signer: null,
         };
-        if ((window as any).ethereum) {
+        if ((window as any).web3) {
           console.log('metamask was found');
-          walletProvider.provider = new ethers.providers.Web3Provider((window as any).ethereum, "any");
+          //const provider = await (window as any).ethereum.send('eth_requestAccounts');
+          walletProvider.provider = new ethers.providers.Web3Provider((window as any).web3.currentProvider);
           walletProvider.signer = walletProvider.provider.getSigner();
         } else {
           console.log('metamask was NOT found');
@@ -84,6 +89,8 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
           walletProvider.signer = walletProvider.provider.getSigner();
         }
         await getNetwork(walletProvider.provider);
+        const accounts = await walletProvider.provider.listAccounts();
+        console.log(`Check price here ${accounts}`);
         dispatch({ type: 'SIGN_IN' , provider: walletProvider.provider, signer: walletProvider.signer });
         storage.setItem(constant.KEY_INFO, 'test');
       },
