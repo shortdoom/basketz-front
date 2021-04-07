@@ -5,7 +5,7 @@ import Box from '@material-ui/core/Box';
 import Paper from '@material-ui/core/Paper';
 import Grid from '@material-ui/core/Grid';
 import * as CSS from 'csstype';
-import ethers from 'ethers';
+import { ethers } from 'ethers';
 
 import { useWallet } from '../../providers';
 
@@ -35,10 +35,12 @@ function FormRow() {
 
 export default function DashboardPage() {
   const { provider, account, contracts } = useWallet();
-  const [etherPrice, setEtherPrice] = useState<ethers.BigNumber|undefined>();
+  const [etherPrice, setEtherPrice] = useState<string>();
   useEffect(() => {
     const initState = async () => {
       try {
+        const balance = await provider?.getBalance(account);
+        if (balance) setEtherPrice(ethers.utils.formatEther(balance));
         for (const contract of contracts) {
           const price = await provider?.getBalance(contract.cabi.address);
           // const code = await provider?.getCode(contract.cabi.address)
@@ -55,16 +57,21 @@ export default function DashboardPage() {
   return (
     <Box sx={{ flexGrow: 1, pt: 1 }}>
       <Grid container spacing={1}>
-        <Grid container item spacing={3}>
-          <Grid item xs={6}>
-            <Item>{etherPrice}</Item>
-          </Grid>
+        <Grid container justifyContent="center" item spacing={3}>
           <Grid item xs={6}>
             <Item>Item</Item>
           </Grid>
         </Grid>
         <Grid container item spacing={3}>
-          <FormRow />
+          <Grid item xs={4}>
+            <Item>{etherPrice}</Item>
+          </Grid>
+          <Grid item xs={4}>
+            <Item>Item</Item>
+          </Grid>
+          <Grid item xs={4}>
+            <Item>Item</Item>
+          </Grid>
         </Grid>
         <Grid container item spacing={3}>
           <FormRow />
