@@ -12,6 +12,10 @@ import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import Container from '@material-ui/core/Container';
 import LoadingButton from '@material-ui/lab/LoadingButton';
+import Box from '@material-ui/core/Box';
+import Avatar from '@material-ui/core/Avatar';
+import Chip from '@material-ui/core/Chip';
+import Tooltip from '@material-ui/core/Tooltip';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
@@ -34,20 +38,46 @@ function NoMatch() {
   return <h1>Doesnt exist</h1>
 }
 
+// change i18n
+const copyTextLabel: string = 'Copy account';
+const copiedTextLabel: string = 'Account address copied!';
+
 function LoggedAppBar() {
   const classes = useStyles();
-  const { provider, signOut } = useWallet();
+  const { provider, account, signOut } = useWallet();
+  const [copyText, setCopyText] = useState<string>(copyTextLabel);
+
+  //TODO: change copy clippboard to a useEffect to clean the timeout if we destroy the component before
+  //TODO: Allow switch account triggering WalletProvider change
   return (
     <Router>
       <AppBar position="fixed">
         <Toolbar>
           <Button color="inherit" component={RouterLink} to="/">Home</Button>
-          <Typography variant="h6" component="div" className={classes.title}>
-          </Typography>
-            <Button color="inherit" onClick={signOut}>{`Logout ${provider?.network.name}`}</Button>
+          <Typography variant="h6" component="div" className={classes.title} />
+          <Button color="inherit" onClick={signOut}>Logout</Button>
         </Toolbar>
       </AppBar>
       <Toolbar />
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        flexWrap: 'wrap',
+        '& > :not(style)': {
+          m: 0.5,
+        },
+      }}>
+        <Tooltip title="Current network">
+          <Chip avatar={<Avatar>N</Avatar>} label={provider?.network.name} />
+        </Tooltip>
+        <Tooltip title={copyText}>
+          <Chip avatar={<Avatar>A</Avatar>} label={account} onClick={() => {
+            setCopyText(copiedTextLabel)
+            setTimeout(() => setCopyText(copyTextLabel), 2000)
+            navigator.clipboard.writeText(account);
+          }} />
+        </Tooltip>
+      </Box>
       <Switch>
         <Route exact path="/">
           <DashboardPage />
@@ -68,7 +98,7 @@ function UnloggedAppBar() {
   const { signIn } = useWallet();
   const [isPending, setIsPending] = useState<boolean>(false);
 
-  const signWallet = async () => {
+  const signInWallet = async () => {
     try {
       setIsPending(true);
       // Use this function to allow different wallets and ask user permission
@@ -87,8 +117,8 @@ function UnloggedAppBar() {
         <Button color="inherit" component={RouterLink} to="/">Home</Button>
         <Typography variant="h6" component="div" className={classes.title}>
         </Typography>
-        {((window as any).ethereum) ? 
-          <LoadingButton pending={isPending} color="inherit" onClick={signWallet}>Connect wallet</LoadingButton> :
+        {((window as any).web3) ? 
+          <LoadingButton pending={isPending} color="inherit" onClick={signInWallet}>Connect wallet</LoadingButton> :
           <Button color="inherit">Install wallet</Button>
         }  
       </Toolbar>

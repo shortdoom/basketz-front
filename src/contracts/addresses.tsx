@@ -10,7 +10,8 @@ export interface Addresses {
   [chainID: number]: TokenInfo[];
 }
 
-export const tokens: Addresses = {
+// Change to uniswap list of addresses?
+export const tokensList: Addresses = {
   4: [//Rinkeby
     { name: 'ercWrapper', address: '0x5582E24970e186B28c51F6D0c1F2Bd8a4B281962', abi: 'ercWrapper' },
     { name: 'MockA', address: '0x220b45711340265481ACfF4302b5F0e17011503f', abi: 'basketz' }
