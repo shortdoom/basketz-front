@@ -7,10 +7,28 @@ import { tokensList, abis } from '../contracts';
   signer: ethers.providers.JsonRpcSigner | null
 }*/
 
-interface BasketzContract {
+export interface ContractInfo {
   name: string;
   cabi: ethers.Contract;
 }
+
+export interface ContractList {
+  isLoaded: boolean,
+  updatedAt: Date,
+  MockA: ContractInfo | null,
+  MockB: ContractInfo | null,
+  Wrapper: ContractInfo | null,
+  SupportedToken: ContractInfo[],
+}
+
+const initContractList: ContractList = {
+  isLoaded: false,
+  updatedAt: new Date(),
+  MockA: null,
+  MockB: null,
+  Wrapper: null,
+  SupportedToken: [],
+};
 
 interface WalletState /*extends ProviderInformation*/ {
   provider: ethers.providers.JsonRpcProvider | ethers.providers.Web3Provider | null
@@ -18,7 +36,7 @@ interface WalletState /*extends ProviderInformation*/ {
   listAccount: string[]
   account: string
   status: 'idle' | 'signOut' | 'signIn'
-  contracts: BasketzContract[]
+  contracts: ContractList
 }
 //type WalletAction = { type: 'SIGN_IN'; token: string } | { type: 'SIGN_OUT' }
 type WalletAction = 
@@ -29,7 +47,7 @@ type WalletAction =
     listAccount: string[],
   } |
   { type: 'SIGN_OUT' } |
-  { type: 'LOAD_ACCOUNT', contracts: BasketzContract[] };
+  { type: 'LOAD_ACCOUNT', contracts: ContractList };
 
 interface WalletContextActions {
   signIn: () => void
@@ -42,7 +60,7 @@ const WalletContext = createContext<WalletContextType>({
   signer: null,
   account: '',
   listAccount: [],
-  contracts: [],
+  contracts: initContractList,
   status: 'idle',
   signIn: () => {},
   signOut: () => {},
@@ -52,7 +70,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
     provider: null,
     signer: null,
     listAccount: [],
-    contracts: [],
+    contracts: initContractList,
     account: '',
     status: 'idle',
   });
@@ -60,21 +78,32 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const initContracts = async () => {
       try {
-        const contracts: BasketzContract[] = [];
+        const contracts: ContractList = initContractList;
         if (state.account && state.provider) {
+          // maybe make the difference from the start between mock tokens
           const networkTokens = tokensList[state.provider.network.chainId]
           if (networkTokens) {
             for (const token of networkTokens) {
-              // Maybe create or use the contract facotory
-              const cabi = new ethers.Contract(token.address, abis[token.abi], state.signer || state.provider);
-              // check balance maybe and allow to add it to the new contract
-              contracts.push({
+              // Create contract info
+              const contract: ContractInfo = {
                 name: token.name,
-                cabi,
-              });
+                cabi: new ethers.Contract(token.address, abis[token.abi], state.signer || state.provider),
+              }
+              if (token.name === 'MockA') {
+                contracts.MockA = contract;
+              } else if (token.name === 'MockB') {
+                contracts.MockB = contract;
+              } else if (token.name === 'ercWrapper') {
+                contracts.Wrapper = contract;
+              } else {//supported token
+                //verify balance before adding?
+                contracts.SupportedToken.push(contract);
+              }
             }
           }
         }
+        contracts.isLoaded = true;
+        contracts.updatedAt = new Date();
         dispatch({ type: 'LOAD_ACCOUNT', contracts });
       } catch (err) {
         console.log(err);
@@ -135,7 +164,7 @@ const WalletReducer = (prevState: WalletState, action: WalletAction): WalletStat
         ...prevState,
         status: 'signOut',
         listAccount: [],
-        contracts: [],
+        contracts: initContractList,
         account: '',
         provider: null,
         signer: null,

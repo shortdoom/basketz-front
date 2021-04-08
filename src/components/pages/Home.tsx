@@ -17,18 +17,8 @@ import Avatar from '@material-ui/core/Avatar';
 import Chip from '@material-ui/core/Chip';
 import Tooltip from '@material-ui/core/Tooltip';
 
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
-
 import DashboardPage from './Dashboard';
 import { useWallet } from '../../providers';
-
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    title: {
-      flexGrow: 1,
-    },
-  }),
-);
 
 function Home() {
   return <h1>Home stuff</h1>
@@ -43,7 +33,6 @@ const copyTextLabel: string = 'Copy account';
 const copiedTextLabel: string = 'Account address copied!';
 
 function LoggedAppBar() {
-  const classes = useStyles();
   const { provider, account, signOut } = useWallet();
   const [copyText, setCopyText] = useState<string>(copyTextLabel);
 
@@ -54,7 +43,7 @@ function LoggedAppBar() {
       <AppBar position="fixed">
         <Toolbar>
           <Button color="inherit" component={RouterLink} to="/">Home</Button>
-          <Typography variant="h6" component="div" className={classes.title} />
+          <Typography variant="h6" component="div" style={{flexGrow: 1}} />
           <Button color="inherit" onClick={signOut}>Logout</Button>
         </Toolbar>
       </AppBar>
@@ -94,7 +83,6 @@ function LoggedAppBar() {
 }
 
 function UnloggedAppBar() {
-  const classes = useStyles();
   const { signIn } = useWallet();
   const [isPending, setIsPending] = useState<boolean>(false);
 
@@ -104,9 +92,9 @@ function UnloggedAppBar() {
       // Use this function to allow different wallets and ask user permission
       //const accounts = await (window as any).send('eth_requestAccounts');
       await signIn();
-      setIsPending(false);
     } catch (err) {
       console.log(err);
+      setIsPending(false);
     }
   }
 
@@ -115,8 +103,7 @@ function UnloggedAppBar() {
     <AppBar position="fixed">
       <Toolbar>
         <Button color="inherit" component={RouterLink} to="/">Home</Button>
-        <Typography variant="h6" component="div" className={classes.title}>
-        </Typography>
+        <Typography variant="h6" component="div" style={{flexGrow: 1}} />
         {((window as any).web3) ? 
           <LoadingButton pending={isPending} color="inherit" onClick={signInWallet}>Connect wallet</LoadingButton> :
           <Button color="inherit">Install wallet</Button>
