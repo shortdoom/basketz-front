@@ -47,11 +47,13 @@ type WalletAction =
     listAccount: string[],
   } |
   { type: 'SIGN_OUT' } |
-  { type: 'LOAD_ACCOUNT', contracts: ContractList };
+  { type: 'LOAD_ACCOUNT', contracts: ContractList } |
+  { type: 'TRANSACTION_DONE' };
 
 interface WalletContextActions {
   signIn: () => void
   signOut: () => void
+  checkTx: (transaction: any) => void
 }
 interface WalletContextType extends WalletState, WalletContextActions {};
 
@@ -60,17 +62,18 @@ const WalletContext = createContext<WalletContextType>({
   signer: null,
   account: '',
   listAccount: [],
-  contracts: initContractList,
+  contracts: {...initContractList},
   status: 'idle',
   signIn: () => {},
   signOut: () => {},
+  checkTx: (transaction: any) => {},
 })
 export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
   const [state, dispatch] = useReducer(WalletReducer, {
     provider: null,
     signer: null,
     listAccount: [],
-    contracts: initContractList,
+    contracts: {...initContractList},
     account: '',
     status: 'idle',
   });
@@ -78,7 +81,8 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const initContracts = async () => {
       try {
-        const contracts: ContractList = initContractList;
+        const contracts: ContractList = {...initContractList};
+        contracts.SupportedToken = [];
         if (state.account && state.provider) {
           // maybe make the difference from the start between mock tokens
           const networkTokens = tokensList[state.provider.network.chainId]
@@ -89,14 +93,14 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
                 name: token.name,
                 cabi: new ethers.Contract(token.address, abis[token.abi], state.signer || state.provider),
               }
-              if (token.name === 'MockA') {
-                contracts.MockA = contract;
-              } else if (token.name === 'MockB') {
-                contracts.MockB = contract;
-              } else if (token.name === 'ercWrapper') {
+              if (token.abi === 'ercWrapper') {
                 contracts.Wrapper = contract;
-              } else {//supported token
-                //verify balance before adding?
+              } else {
+                if (token.abi === 'mockTokenA') {
+                  contracts.MockA = contract;
+                } else if (token.abi === 'mockTokenB') {
+                  contracts.MockB = contract;
+                }
                 contracts.SupportedToken.push(contract);
               }
             }
@@ -138,6 +142,19 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
       signOut: async () => {
         dispatch({ type: 'SIGN_OUT' });
       },
+      checkTx: async (transaction: any) => {
+        try {
+          console.log(transaction);
+          if (transaction.wait) {
+            await transaction.wait();
+            dispatch({ type: 'TRANSACTION_DONE' });  
+          }
+        } catch (err) {
+          console.log('inside check transaction from wallet');
+          console.log(err);
+        }
+        
+      },
     }),
     []
   )
@@ -164,7 +181,7 @@ const WalletReducer = (prevState: WalletState, action: WalletAction): WalletStat
         ...prevState,
         status: 'signOut',
         listAccount: [],
-        contracts: initContractList,
+        contracts: {...initContractList},
         account: '',
         provider: null,
         signer: null,
@@ -173,6 +190,15 @@ const WalletReducer = (prevState: WalletState, action: WalletAction): WalletStat
       return {
         ...prevState,
         contracts: action.contracts
+      }
+    case 'TRANSACTION_DONE':
+      console.log('transaction dispatch made');
+      return {
+        ...prevState,
+        contracts: {
+          ...prevState.contracts,
+          updatedAt: new Date(),
+        }
       }
   }
 }

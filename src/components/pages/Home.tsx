@@ -104,7 +104,7 @@ function UnloggedAppBar() {
       <Toolbar>
         <Button color="inherit" component={RouterLink} to="/">Home</Button>
         <Typography variant="h6" component="div" style={{flexGrow: 1}} />
-        {((window as any).web3) ? 
+        {((window as any).ethereum) ? 
           <LoadingButton pending={isPending} color="inherit" onClick={signInWallet}>Connect wallet</LoadingButton> :
           <Button color="inherit">Install wallet</Button>
         }  
