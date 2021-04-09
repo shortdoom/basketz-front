@@ -10,12 +10,29 @@ import Typography from '@material-ui/core/Typography';
 import { red } from '@material-ui/core/colors';
 import LoadingButton from '@material-ui/lab/LoadingButton';
 import RefreshIcon from '@material-ui/icons/Refresh';
-import Button from '@material-ui/core/Button';
+//import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import { ethers } from 'ethers';
 
 import { IContractInfo, useWallet } from '../../providers';
-import { ContactSupportTwoTone } from '@material-ui/icons';
+//import { ContactSupportTwoTone } from '@material-ui/icons';
+
+/**
+ 
+  const SwitchMode = () => {
+    setIsDeposit(!isDepoist);
+  }
+ * 
+ * Line 102
+   <CardContent sx={{
+      display: 'flex',
+      justifyContent: 'center',
+    }}>
+      <Button variant="outlined" onClick={SwitchMode} disabled={isPending}>
+        {(isDepoist) ? switchWithdraw : switchDeposit}
+      </Button>
+    </CardContent>
+ */
 
 /**
  * Show your eth amount
@@ -25,36 +42,35 @@ import { ContactSupportTwoTone } from '@material-ui/icons';
  * Button to perform the deposit / withdraw
  * @returns 
  */
-const switchDeposit = 'Switch to deposit';
-const switchWithdraw = 'Switch to withdraw';
-const Depoist = 'Deposit';
-const Withdraw = 'Withdraw';
+/*const switchDeposit = 'Switch to deposit';
+const switchWithdraw = 'Switch to withdraw';*/
+const Deposit = 'Deposit';
+//const Withdraw = 'Withdraw';
 interface IProps {
   contract: IContractInfo
   ethBalance: string | undefined
   setEthBalance: Dispatch<SetStateAction<string | undefined>>
 }
 
-function sleep(ms: number) {
+/*function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
-}
+}*/
+//<TextField inputProps={{ inputMode: 'numeric', pattern: '^[0-9]+(\.)?[0-9]*$' }} />
 const isNumber = /^[0-9]+(\.)?[0-9]*$/;
 const DepositCard = ({ contract, ethBalance, setEthBalance } : IProps) =>  {
-  const [isDepoist, setIsDeposit] = useState<boolean>(true);
+  //const [isDepoist, setIsDeposit] = useState<boolean>(true);
   const [isPending, setIsPending] = useState<boolean>(false);
   const [tokenBalance, setTokenBalance] = useState<string>('0');
   const [exchanged, setExchanged] = useState<string>('0');
-  const { provider, account } = useWallet();
+  const { account, checkTx, contracts } = useWallet();
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log(isNumber.test(event.target.value))
     if (isNumber.test(event.target.value)) {
       setExchanged(event.target.value);
     }
   };
 
   const queryContract = async () => {
-    console.log('Loading contract informations');
     const balance: ethers.BigNumberish = await contract.cabi.balanceOf(account);
     setTokenBalance(ethers.utils.formatEther(balance));
   };
@@ -64,20 +80,16 @@ const DepositCard = ({ contract, ethBalance, setEthBalance } : IProps) =>  {
     return () => {
       console.log('unmounting mocked contract');
     }
-  }, [contract.cabi.address])
-
-  const SwitchMode = () => {
-    setIsDeposit(!isDepoist);
-  }
+  }, [contract.cabi.address, contracts.updatedAt])
 
   const SubmitForm = async () => {
     setIsPending(true);
     try {
       const value = ethers.utils.parseEther(exchanged);
-      console.log(value);
-      await contract.cabi.deposit({ value });
-      const balance = await provider?.getBalance(account);
-      if (balance) setEthBalance(ethers.utils.formatEther(balance));
+      const tx = await contract.cabi.deposit({ value });
+      checkTx(tx);
+      /*const balance = await provider?.getBalance(account);
+      if (balance) setEthBalance(ethers.utils.formatEther(balance));*/
     } catch (err) {
       console.log(err);
     }
@@ -99,32 +111,24 @@ const DepositCard = ({ contract, ethBalance, setEthBalance } : IProps) =>  {
         }
         title={contract.name}
       />
-      <CardContent sx={{
-        display: 'flex',
-        justifyContent: 'center',
-      }}>
-        <Button variant="outlined" onClick={SwitchMode} disabled={isPending}>
-          {(isDepoist) ? switchWithdraw : switchDeposit}
-        </Button>
-      </CardContent>
+      
       <CardContent>
         <Typography variant="body2" paragraph>
           You can use this contract in order to exchange {contract.name} Tokens.
         </Typography>
         <Typography variant="body2" style={{ fontWeight: 600, display: 'inline-block' }}>
-          {contract.name}:
+          {contract.name} balance:
         </Typography>
         <Typography style={{ display: 'inline-block' }}>
           {tokenBalance}
         </Typography>
         
         <TextField
-          id="filled-name"
-          label="Deposit amount"
+          label="Deposit"
           value={exchanged}
           onChange={handleChange}
           variant="standard"
-          helperText="Only accept number"
+          helperText="ETH amount, min 0.01"
           fullWidth
         />
       </CardContent>
@@ -133,7 +137,7 @@ const DepositCard = ({ contract, ethBalance, setEthBalance } : IProps) =>  {
         justifyContent: 'center',
       }}>
         <LoadingButton variant="contained" pending={isPending} onClick={SubmitForm} fullWidth>
-          {(isDepoist) ? Depoist : Withdraw}
+          {/*(isDepoist) ? Deposit : Withdraw*/Deposit}
         </LoadingButton>
       </CardActions>
     </Card>
